@@ -2,30 +2,43 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"github.com/BurntSushi/toml"
 	"net/smtp"
 	"strings"
 )
 
+type SMTPConfig struct {
+	userName string `toml:"userName"`
+	password string `toml:"password"`
+	smtpHost string `toml:"smtpHost"`
+	smtpPort string `toml:"smtpPort"`
+}
+
+type MailAddressConfig struct {
+	fromAddress string `toml:"fromAddress"`
+	toAddress []string `toml:"toAddress"`
+}
+
+
+type Config struct {
+	SMTP        SMTPConfig `toml:"smtp"`
+	MailAddress MailAddressConfig `toml:"mailAddress"`
+}
+
 func main() {
 
-	// 標準出力テストコード
-	fmt.Print("Hello World")
-
-	// SMTP設定 TODO:外部ファイル化・構造体化
-	userName := "ユーザー名@gmail.com"
-	password := "パスワード" // gmailの場合は2段階認証設定+2段階設定後にアプリパスワードで設定したパスワード
-	smtpHost := "smtp.gmail.com"
-	smtpPort := "587"
-	// 送信元・送信先メールアドレス
-	fromAddress := userName
-	toAddress := []string{"送信先メールアドレス１", "送信先メールアドレス２"}
+	// 設定の読み込み
+	var config Config
+	if _, tomlError := toml.DecodeFile("config.toml", &config); tomlError != nil {
+		fmt.Println(tomlError)
+		return
+	}
 
 	// メール内容 TODO:text/templateに変更
 	subject := "タイトル"
 	message := "テストメール"
 	mailContent := []byte(
-		"To: " + strings.Join(toAddress, ";") + "\r\n" +
+		"To: " + strings.Join(config.MailAddress.toAddress, ";") + "\r\n" +
 			"Subject:" + subject + "\r\n" +
 			"\r\n" +
 			message)
@@ -33,22 +46,23 @@ func main() {
 	// 認証情報の設定
 	auth := smtp.PlainAuth(
 		"",
-		userName,
-		password,
-		smtpHost,
+		config.SMTP.userName,
+		config.SMTP.password,
+		config.SMTP.smtpHost,
 	)
 
 	// メール送信
-	error := smtp.SendMail(
-		smtpHost+":"+smtpPort,
+	mailError := smtp.SendMail(
+		config.SMTP.smtpHost+":"+config.SMTP.smtpPort,
 		auth,
-		fromAddress,
-		toAddress,
+		config.MailAddress.fromAddress,
+		config.MailAddress.toAddress,
 		mailContent,
 	)
 
-	if error != nil {
-		log.Fatal(error)
+	if mailError != nil {
+		fmt.Println(mailError)
+		return
 	}
 
 }
