@@ -1,0 +1,9 @@
+[smtp]
+userName = ""
+password = ""
+smtpHost = "smtp.gmail.com"
+smtpPort = "587"
+
+[mailAddress]
+fromAddress = ""
+toAddress = ["", ""]
